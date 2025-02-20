@@ -38,6 +38,7 @@ from .compat import (
     getproxies,
     getproxies_environment,
     integer_types,
+    is_urllib3_1,
 )
 from .compat import parse_http_list as _parse_list_header
 from .compat import (
@@ -97,6 +98,8 @@ if sys.platform == "win32":
         # '<local>' string by the localhost entry and the corresponding
         # canonical entry.
         proxyOverride = proxyOverride.split(";")
+        # filter out empty strings to avoid re.match return true in the following code.
+        proxyOverride = filter(None, proxyOverride)
         # now check if we match one of the registry values.
         for test in proxyOverride:
             if test == "<local>":
@@ -133,6 +136,11 @@ def dict_to_sequence(d):
 def super_len(o):
     total_length = None
     current_position = 0
+
+    if not is_urllib3_1 and isinstance(o, str):
+        # urllib3 2.x+ treats all strings as utf-8 instead
+        # of latin-1 (iso-8859-1) like http.client.
+        o = o.encode("utf-8")
 
     if hasattr(o, "__len__"):
         total_length = len(o)
